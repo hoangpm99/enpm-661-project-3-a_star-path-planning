@@ -2,10 +2,8 @@
 # Author: Hoang Pham
 # Last modified: 2024-03-20
 # Python version: 3.8
-# Usage: python dijkstra_hoang_pham.py
-# Notes: This script requires the OpenCV library to be installed. You can install it using pip: pip install opencv-python
-#        The script will prompt the user to enter the start and goal node coordinates. The user needs to enter any valid coordinates within the map.
-#        The script will display the map with obstacles, the explored nodes, and the optimal path in a window using OpenCV.
+# Usage: python a_star_hoang_pham.py
+# Notes: 
 
 from queue import PriorityQueue
 import numpy as np
@@ -34,37 +32,7 @@ class Node:
     def __hash__(self):
         return hash(self.state)
 
-def move_up(node):
-    x, y = node.state
-    return (x, y + 1, 1)
-
-def move_down(node):
-    x, y = node.state
-    return (x, y - 1, 1)
-
-def move_left(node):
-    x, y = node.state
-    return (x - 1, y, 1)
-
-def move_right(node):
-    x, y = node.state
-    return (x + 1, y, 1)
-
-def move_up_left(node):
-    x, y = node.state
-    return (x - 1, y + 1, 1.4)
-
-def move_up_right(node):
-    x, y = node.state
-    return (x + 1, y + 1, 1.4)
-
-def move_down_left(node):
-    x, y = node.state
-    return (x - 1, y - 1, 1.4)
-
-def move_down_right(node):
-    x, y = node.state
-    return (x + 1, y - 1, 1.4)
+# Define the action functions
 
 #############################################################################################
 
@@ -148,44 +116,10 @@ def create_map(height=500, width=1200, border_thickness=5):
 
 #############################################################################################
 
-# Step 3: Implement the Dijkstra algorithm to generate the graph and find the optimal path
+# Step 3: Implement the A* algorithm to generate the graph and find the optimal path
 
 #############################################################################################
 
-def dijkstra(start_node, goal_node, is_obstacle):
-    open_list = PriorityQueue()
-    closed_list = set()
-
-    open_list.put(start_node)
-
-    while not open_list.empty():
-        current_node = open_list.get()
-
-        closed_list.add(current_node)
-        
-        if is_goal_node(current_node, goal_node):
-            return "Success", current_node, closed_list
-        else:
-            for action in actions:
-                new_node = Node((0, 0))
-                x, y, action_cost = action(current_node)
-                new_node.state = (x, y)
-                
-                if new_node not in closed_list and not is_obstacle(new_node.state[0], new_node.state[1]):
-                    if new_node.state not in [node.state for node in open_list.queue]:
-                        new_node.parent = current_node
-                        new_node.cost_to_come = current_node.cost_to_come + action_cost
-                        new_node.cost = new_node.cost_to_come
-                        open_list.put(new_node)
-                        # print("New node added to open list:", new_node.state)
-                else:
-                    if new_node.cost > current_node.cost_to_come + action_cost:
-                        new_node.parent = current_node
-                        new_node.cost_to_come = current_node.cost_to_come + action_cost
-                        new_node.cost = new_node.cost_to_come
-                        # print("Updated cost of node in open list:", new_node.state, new_node.cost)
-
-    return None
 
 # Function to check if the current node is the goal node
 def is_goal_node(current_node, goal_node):
@@ -288,16 +222,7 @@ def get_start_and_goal_nodes(obstacle_positions):
 if __name__ == "__main__":
     
     # Define the action set
-    actions = [
-        move_up,
-        move_down,
-        move_left,
-        move_right,
-        move_up_left,
-        move_up_right,
-        move_down_left,
-        move_down_right
-    ]
+
 
     # Create the map
     canvas, height, obstacle_positions = create_map()
@@ -315,12 +240,9 @@ if __name__ == "__main__":
     # Get user input for start and goal nodes
     start_node, goal_node = get_start_and_goal_nodes(obstacle_positions)
 
-    # Generate the graph and find the path
-    result, goal_node, closed_list = dijkstra(start_node, goal_node, is_obstacle)
-
-    if result == "Success":
-        print("Path found!")
-        path_nodes = backtrack(goal_node)
-        visualize_path(canvas, path_nodes, closed_list)
-    else:
-        print("No path found.")
+    # if result == "Success":
+    #     print("Path found!")
+    #     path_nodes = backtrack(goal_node)
+    #     visualize_path(canvas, path_nodes, closed_list)
+    # else:
+    #     print("No path found.")
