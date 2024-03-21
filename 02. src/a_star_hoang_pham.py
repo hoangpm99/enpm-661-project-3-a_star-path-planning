@@ -164,14 +164,25 @@ def is_goal_node(current_node, goal_node, threshold=1.5):
     return euclidean_distance(current_node.state, goal_node.state) <= threshold
 
 # Define the goal node check function
+def is_duplicate_node(V, node, threshold_xy=0.5, threshold_theta=30):
+    x, y, theta = node.state
+    i = int(round(y / threshold_xy))
+    j = int(round(x / threshold_xy))
+    k = int(round(theta / threshold_theta))
+    if V[i][j][k] == 1:
+        return True
+    else:
+        V[i][j][k] = 1
+        return False
+    
 
-# Define the A* algorithm
 
 #############################################################################################
 
 # Step 4: Implement the backtracking function to find the optimal path
 
 #############################################################################################
+# Define the backtracking function
 def backtrack(goal_node):
     path = []
     current_node = goal_node
