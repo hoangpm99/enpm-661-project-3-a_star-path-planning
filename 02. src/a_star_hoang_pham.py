@@ -175,7 +175,49 @@ def is_duplicate_node(V, node, threshold_xy=0.5, threshold_theta=30):
         V[i][j][k] = 1
         return False
     
+# Define the A* algorithm
+def a_star(start_node, goal_node, is_obstacle):
+    open_list = PriorityQueue()
+    
+    threshold_xy = 0.5
+    threshold_theta = 30
+    V = np.zeros((500, 1200, 12), dtype=int)  # Matrix to store visited nodes information
 
+    closed_list = set()
+    
+    start_node.cost_to_come = 0
+    start_node.cost_to_go = euclidean_distance(start_node.state, goal_node.state)
+    start_node.cost = start_node.cost_to_come + start_node.cost_to_go
+    open_list.put(start_node)
+
+    while not open_list.empty():
+        current_node = open_list.get()
+
+        closed_list.add(current_node)
+
+        if is_goal_node(current_node, goal_node):
+            return "Success", current_node, closed_list
+        else:
+            for action in actions:
+                new_node = Node((0, 0, 0))
+                x, y, theta, action_cost = action(current_node)
+                new_node.state = (x, y, theta)
+
+                if not is_duplicate_node(V, new_node) and not is_obstacle(new_node.state[0], new_node.state[1]):
+                    if new_node.state not in [node.state for node in open_list.queue]:
+                        new_node.parent = current_node
+                        new_node.cost_to_come = current_node.cost_to_come + action_cost
+                        new_node.cost_to_go = euclidean_distance(new_node.state, goal_node.state)
+                        new_node.cost = new_node.cost_to_come + new_node.cost_to_go
+                        open_list.put(new_node)
+                else:
+                    if new_node.cost > current_node.cost_to_come + action_cost + euclidean_distance(new_node.state, goal_node.state):
+                        new_node.parent = current_node
+                        new_node.cost_to_come = current_node.cost_to_come + action_cost
+                        new_node.cost_to_go = euclidean_distance(new_node.state, goal_node.state)
+                        new_node.cost = new_node.cost_to_come + new_node.cost_to_go
+
+    return None
 
 #############################################################################################
 
