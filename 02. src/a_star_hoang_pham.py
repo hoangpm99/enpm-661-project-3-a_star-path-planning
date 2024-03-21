@@ -33,6 +33,40 @@ class Node:
         return hash(self.state)
 
 # Define the action functions
+def move_straight(node, step_size):
+    x, y, theta = node.state
+    new_x = x + step_size * np.cos(np.deg2rad(theta))
+    new_y = y + step_size * np.sin(np.deg2rad(theta))
+    new_theta = theta
+    return (new_x, new_y, new_theta)
+
+def move_30_left(node, step_size):
+    x, y, theta = node.state
+    new_x = x + step_size * np.cos(np.deg2rad(theta + 30))
+    new_y = y + step_size * np.sin(np.deg2rad(theta + 30))
+    new_theta = theta + 30
+    return (new_x, new_y, new_theta)
+
+def move_60_left(node, step_size):
+    x, y, theta = node.state
+    new_x = x + step_size * np.cos(np.deg2rad(theta + 60))
+    new_y = y + step_size * np.sin(np.deg2rad(theta + 60))
+    new_theta = theta + 60
+    return (new_x, new_y, new_theta)
+
+def move_30_right(node, step_size):
+    x, y, theta = node.state
+    new_x = x + step_size * np.cos(np.deg2rad(theta - 30))
+    new_y = y + step_size * np.sin(np.deg2rad(theta - 30))
+    new_theta = theta - 30
+    return (new_x, new_y, new_theta)
+
+def move_60_right(node, step_size):
+    x, y, theta = node.state
+    new_x = x + step_size * np.cos(np.deg2rad(theta - 60))
+    new_y = y + step_size * np.sin(np.deg2rad(theta - 60))
+    new_theta = theta - 60
+    return (new_x, new_y, new_theta)
 
 #############################################################################################
 
