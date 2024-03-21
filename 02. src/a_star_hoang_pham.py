@@ -1,6 +1,6 @@
 # Description: This is a Python script that implements the A* algorithm for path planning in a 2D grid map.
 # Author: Hoang Pham
-# Last modified: 2024-03-20
+# Last modified: 2024-03-21
 # Python version: 3.8
 # Usage: python a_star_hoang_pham.py
 # Notes: 
@@ -38,35 +38,35 @@ def move_straight(node, step_size):
     new_x = x + step_size * np.cos(np.deg2rad(theta))
     new_y = y + step_size * np.sin(np.deg2rad(theta))
     new_theta = theta
-    return (new_x, new_y, new_theta)
+    return (new_x, new_y, new_theta, 1)
 
 def move_30_left(node, step_size):
     x, y, theta = node.state
     new_x = x + step_size * np.cos(np.deg2rad(theta + 30))
     new_y = y + step_size * np.sin(np.deg2rad(theta + 30))
     new_theta = theta + 30
-    return (new_x, new_y, new_theta)
+    return (new_x, new_y, new_theta, 1)
 
 def move_60_left(node, step_size):
     x, y, theta = node.state
     new_x = x + step_size * np.cos(np.deg2rad(theta + 60))
     new_y = y + step_size * np.sin(np.deg2rad(theta + 60))
     new_theta = theta + 60
-    return (new_x, new_y, new_theta)
+    return (new_x, new_y, new_theta, 1)
 
 def move_30_right(node, step_size):
     x, y, theta = node.state
     new_x = x + step_size * np.cos(np.deg2rad(theta - 30))
     new_y = y + step_size * np.sin(np.deg2rad(theta - 30))
     new_theta = theta - 30
-    return (new_x, new_y, new_theta)
+    return (new_x, new_y, new_theta, 1)
 
 def move_60_right(node, step_size):
     x, y, theta = node.state
     new_x = x + step_size * np.cos(np.deg2rad(theta - 60))
     new_y = y + step_size * np.sin(np.deg2rad(theta - 60))
     new_theta = theta - 60
-    return (new_x, new_y, new_theta)
+    return (new_x, new_y, new_theta, 1)
 
 #############################################################################################
 
@@ -153,11 +153,19 @@ def create_map(height=500, width=1200, border_thickness=5):
 # Step 3: Implement the A* algorithm to generate the graph and find the optimal path
 
 #############################################################################################
+# Define the heuristic function
+def euclidean_distance(state1, state2):
+    x1, y1, theta1 = state1
+    x2, y2, theta2 = state2
+    return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
+# Define the goal node check function
+def is_goal_node(current_node, goal_node, threshold=1.5):
+    return euclidean_distance(current_node.state, goal_node.state) <= threshold
 
-# Function to check if the current node is the goal node
-def is_goal_node(current_node, goal_node):
-    return current_node.state == goal_node.state
+# Define the goal node check function
+
+# Define the A* algorithm
 
 #############################################################################################
 
@@ -256,7 +264,13 @@ def get_start_and_goal_nodes(obstacle_positions):
 if __name__ == "__main__":
     
     # Define the action set
-
+    actions = [
+        move_straight,
+        move_30_left,
+        move_60_left,
+        move_30_right,
+        move_60_right
+    ]
 
     # Create the map
     canvas, height, obstacle_positions = create_map()
