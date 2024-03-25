@@ -1,12 +1,13 @@
 # Description: This is a Python script that implements the A* algorithm for path planning in a 2D grid map.
 # Author: Hoang Pham
-# Last modified: 2024-03-21
+# Last modified: 2024-03-24
 # Python version: 3.8
 # Usage: python a_star_hoang_pham.py
 # Notes: 
 
 from queue import PriorityQueue
 import numpy as np
+import math
 import cv2
 
 #############################################################################################
@@ -15,15 +16,19 @@ import cv2
 
 #############################################################################################
 class Node:
-    def __init__(self, state, parent=None, cost_to_come = 0, cost = float('inf')):
+    def __init__(self, state, parent=None, cost_to_come=0, cost_to_go=0, cost=float('inf')):
         self.state = state
         self.parent = parent
         self.cost_to_come = cost_to_come
+        self.cost_to_go = cost_to_go
         self.cost = cost
+        self.x = int(round(state[0]))  # Store the rounded integer value of x
+        self.y = int(round(state[1]))  # Store the rounded integer value of y
+        self.theta = state[2] % 360    # Store the theta value
 
     def __lt__(self, other):
         return self.cost < other.cost
-    
+
     def __eq__(self, other):
         if isinstance(other, Node):
             return self.state == other.state
@@ -32,41 +37,47 @@ class Node:
     def __hash__(self):
         return hash(self.state)
 
+def normalize_theta(theta):
+    theta = theta % 360  # Ensure theta is within 0 to 360 degrees
+    theta = int(round(theta / 30)) * 30  # Round theta to the nearest multiple of 30 degrees
+    return theta
+
 # Define the action functions
 def move_straight(node, step_size):
     x, y, theta = node.state
-    new_x = x + step_size * np.cos(np.deg2rad(theta))
-    new_y = y + step_size * np.sin(np.deg2rad(theta))
-    new_theta = theta
-    return (new_x, new_y, new_theta, 1)
+    new_x = max(0, min(x + step_size * math.cos(math.radians(theta)), 1200 - 1))
+    new_y = max(0, min(y + step_size * math.sin(math.radians(theta)), 500 - 1))
+    new_theta = normalize_theta(theta)
+    return (new_x, new_y, new_theta, step_size)
 
 def move_30_left(node, step_size):
     x, y, theta = node.state
-    new_x = x + step_size * np.cos(np.deg2rad(theta + 30))
-    new_y = y + step_size * np.sin(np.deg2rad(theta + 30))
-    new_theta = theta + 30
-    return (new_x, new_y, new_theta, 1)
+    new_x = max(0, min(x + step_size * math.cos(math.radians(theta + 30)), 1200 - 1))
+    new_y = max(0, min(y + step_size * math.sin(math.radians(theta + 30)), 500 - 1))
+    new_theta = normalize_theta(theta + 30)
+    return (new_x, new_y, new_theta, step_size + 1)
 
 def move_60_left(node, step_size):
     x, y, theta = node.state
-    new_x = x + step_size * np.cos(np.deg2rad(theta + 60))
-    new_y = y + step_size * np.sin(np.deg2rad(theta + 60))
-    new_theta = theta + 60
-    return (new_x, new_y, new_theta, 1)
+    new_x = max(0, min(x + step_size * math.cos(math.radians(theta + 60)), 1200 - 1))
+    new_y = max(0, min(y + step_size * math.sin(math.radians(theta + 60)), 500 - 1))
+    new_theta = normalize_theta(theta + 60)
+    return (new_x, new_y, new_theta, step_size + 2)
 
 def move_30_right(node, step_size):
     x, y, theta = node.state
-    new_x = x + step_size * np.cos(np.deg2rad(theta - 30))
-    new_y = y + step_size * np.sin(np.deg2rad(theta - 30))
-    new_theta = theta - 30
-    return (new_x, new_y, new_theta, 1)
+    new_x = max(0, min(x + step_size * math.cos(math.radians(theta - 30)), 1200 - 1))
+    new_y = max(0, min(y + step_size * math.sin(math.radians(theta - 30)), 500 - 1))
+    new_theta = normalize_theta(theta - 30)
+    return (new_x, new_y, new_theta, step_size + 1)
 
 def move_60_right(node, step_size):
     x, y, theta = node.state
-    new_x = x + step_size * np.cos(np.deg2rad(theta - 60))
-    new_y = y + step_size * np.sin(np.deg2rad(theta - 60))
-    new_theta = theta - 60
-    return (new_x, new_y, new_theta, 1)
+    new_x = max(0, min(x + step_size * math.cos(math.radians(theta - 60)), 1200 - 1))
+    new_y = max(0, min(y + step_size * math.sin(math.radians(theta - 60)), 500 - 1))
+    new_theta = normalize_theta(theta - 60)
+    return (new_x, new_y, new_theta, step_size + 2)
+
 
 #############################################################################################
 
@@ -155,33 +166,44 @@ def create_map(height=500, width=1200, border_thickness=5):
 #############################################################################################
 # Define the heuristic function
 def euclidean_distance(state1, state2):
-    x1, y1, theta1 = state1
-    x2, y2, theta2 = state2
-    return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+    x1, y1, _ = state1
+    x2, y2, _ = state2
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 # Define the goal node check function
 def is_goal_node(current_node, goal_node, threshold=1.5):
     return euclidean_distance(current_node.state, goal_node.state) <= threshold
 
-# Define the goal node check function
-def is_duplicate_node(V, node, threshold_xy=0.5, threshold_theta=30):
+def is_duplicate_node(V, node, threshold_xy=2, threshold_theta=30):
     x, y, theta = node.state
-    i = int(round(y / threshold_xy))
-    j = int(round(x / threshold_xy))
-    k = int(round(theta / threshold_theta))
+    theta = normalize_theta(theta)
+    i = max(0, min(int(round(y / threshold_xy)), V.shape[0] - 1))
+    j = max(0, min(int(round(x / threshold_xy)), V.shape[1] - 1))
+    k = max(0, min(int(round(theta / threshold_theta)), V.shape[2] - 1))
+
     if V[i][j][k] == 1:
         return True
     else:
         V[i][j][k] = 1
         return False
-    
+
+# Define the obstacle check function
+def is_obstacle(node, obstacle_positions):
+    # print(f"Checking obstacle: Node({node.x}, {node.y})")
+    if (node.x, node.y) in obstacle_positions:
+        # print("Obstacle found")
+        return True
+    else:
+        # print("Free space")
+        return False
+
 # Define the A* algorithm
-def a_star(start_node, goal_node, is_obstacle):
+def a_star(start_node, goal_node, step_size, is_obstacle):
     open_list = PriorityQueue()
     
-    threshold_xy = 0.5
+    threshold_xy = 2
     threshold_theta = 30
-    V = np.zeros((500, 1200, 12), dtype=int)  # Matrix to store visited nodes information
+    V = np.zeros((250, 600, 12), dtype=int)  # Matrix to store visited nodes information
 
     closed_list = set()
     
@@ -200,10 +222,12 @@ def a_star(start_node, goal_node, is_obstacle):
         else:
             for action in actions:
                 new_node = Node((0, 0, 0))
-                x, y, theta, action_cost = action(current_node)
+                x, y, theta, action_cost = action(current_node, step_size)
                 new_node.state = (x, y, theta)
+                new_node.x = int(round(x))  # Update the x attribute of the new node
+                new_node.y = int(round(y))  # Update the y attribute of the new node
 
-                if not is_duplicate_node(V, new_node) and not is_obstacle(new_node.state[0], new_node.state[1]):
+                if not is_duplicate_node(V, new_node) and not is_obstacle(new_node):
                     if new_node.state not in [node.state for node in open_list.queue]:
                         new_node.parent = current_node
                         new_node.cost_to_come = current_node.cost_to_come + action_cost
@@ -260,27 +284,28 @@ def visualize_path(canvas, path_nodes, closed_list):
             elif canvas[y, x] == 128:
                 canvas_copy[y, x] = border_color
     
-    # Sort the closed list by the order of exploration
-    closed_list_sorted = sorted(closed_list, key=lambda node: node.cost_to_come)
+    # # Sort the closed list by the order of exploration
+    # closed_list_sorted = sorted(closed_list, key=lambda node: node.cost_to_come)
     
     # Define frame skip interval
     frame_skip_interval = 10
     frame_count = 0
     
     # Show the node exploration animation with frame skipping
-    for node in closed_list_sorted:
+    # for node in closed_list_sorted:
+    for node in closed_list:
         frame_count += 1
         if frame_count % frame_skip_interval != 0:
             continue
-        x, y = node.state
-        canvas_copy[height - 1 - y, x] = explored_color
+        x, y, theta = node.state
+        canvas_copy[int(round(height - 1 - y)), int(round(x))] = explored_color
         cv2.imshow("Path Planning", canvas_copy)
         cv2.waitKey(1)  # 1 ms delay between frames
     
     # Show the optimal path animation
     for node in path_nodes:
-        x, y = node.state
-        canvas_copy[height - 1 - y, x] = path_color
+        x, y, theta = node.state
+        canvas_copy[int(round(height - 1 - y)), int(round(x))] = path_color
         cv2.imshow("Path Planning", canvas_copy)
         cv2.waitKey(10)
     
@@ -290,24 +315,33 @@ def visualize_path(canvas, path_nodes, closed_list):
 # Function to get start and goal nodes from user input
 def get_start_and_goal_nodes(obstacle_positions):
     while True:
-        start_x, start_y = map(int, input("Enter the start node coordinates (x y): ").split())
-        if (start_x, start_y) not in obstacle_positions:
+        start_x, start_y, start_theta = map(int, input("Enter the start node coordinates (x y): ").split())
+        if (start_x, start_y) not in obstacle_positions and start_theta %30 == 0:
             break
         else:
             print("Start node coordinates are within an obstacle. Please choose different coordinates.")
 
     while True:
-        goal_x, goal_y = map(int, input("Enter the goal node coordinates (x y): ").split())
-        if (goal_x, goal_y) not in obstacle_positions:
+        goal_x, goal_y, goal_theta = map(int, input("Enter the goal node coordinates (x y): ").split())
+        if (goal_x, goal_y) not in obstacle_positions and goal_theta %30 == 0:
             break
         else:
             print("Goal node coordinates are within an obstacle. Please choose different coordinates.")
 
-    start_node = Node((start_x, start_y))
-    goal_node = Node((goal_x, goal_y))
+    start_node = Node((start_x, start_y, start_theta))
+    goal_node = Node((goal_x, goal_y, goal_theta))
 
     return start_node, goal_node
 
+# Function to get the step size from user input
+def get_step_size():
+    while True:
+        step_size = int(input("Enter the step size for the robot (from 1 to 10): "))
+        if step_size >= 1 and step_size <= 10:
+            return step_size
+        else:
+            print("Step size must be within 1 and 10.")
+    
 #############################################################################################
 
 # Step 6: Main function to run the path planning algorithm
@@ -328,10 +362,6 @@ if __name__ == "__main__":
     # Create the map
     canvas, height, obstacle_positions = create_map()
     
-    # Define the is_obstacle function using pre-computed obstacle positions
-    def is_obstacle(x, y):
-        return (x, y) in obstacle_positions
-    
     ########################################### (Uncomment to preview the map using OpenCV)
     # cv2.imshow("Map", canvas)
     # cv2.waitKey(0)
@@ -341,9 +371,15 @@ if __name__ == "__main__":
     # Get user input for start and goal nodes
     start_node, goal_node = get_start_and_goal_nodes(obstacle_positions)
 
-    # if result == "Success":
-    #     print("Path found!")
-    #     path_nodes = backtrack(goal_node)
-    #     visualize_path(canvas, path_nodes, closed_list)
-    # else:
-    #     print("No path found.")
+    # Get user input for the step size
+    step_size = get_step_size()    
+    
+    # Run the A* algorithm
+    result, goal_node, closed_list = a_star(start_node, goal_node, step_size, lambda node: is_obstacle(node, obstacle_positions))
+    
+    if result == "Success":
+        print("Path found!")
+        path_nodes = backtrack(goal_node)
+        visualize_path(canvas, path_nodes, closed_list)
+    else:
+        print("No path found.")
